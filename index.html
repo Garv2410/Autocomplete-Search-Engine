@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A blazing fast Autocomplete Search Engine powered by the Trie (Prefix Tree) data structure with Depth First Search (DFS), dynamic word management, and interactive traversal visualization.">
+    <title>TrieSearch | Fast Autocomplete Engine</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Background Ambient Glow Effects -->
+    <div class="ambient-glow glow-1" aria-hidden="true"></div>
+    <div class="ambient-glow glow-2" aria-hidden="true"></div>
+
+    <!-- Main Container -->
+    <div class="app-layout">
+        <!-- Navigation / Header -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none">
+                        <circle cx="12" cy="5" r="3"></circle>
+                        <circle cx="6" cy="19" r="3"></circle>
+                        <circle cx="18" cy="19" r="3"></circle>
+                        <path d="M12 8v3m-4.5 3.5L10 12m4 0 2.5 2.5"></path>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>TrieSearch <span>Engine</span></h1>
+                    <p class="tagline">Prefix Tree (Trie) &amp; DFS Autocomplete</p>
+                </div>
+            </div>
+
+            <div class="header-badges">
+                <div class="stat-pill" title="Total unique words indexed in Trie">
+                    <span class="stat-dot"></span>
+                    <span class="stat-label">Trie Words:</span>
+                    <strong id="header-word-count">0</strong>
+                </div>
+                <a href="#trie-explainer" class="nav-link-btn">How it Works</a>
+                <a href="#complexity-section" class="nav-link-btn">Complexity</a>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Hero Search Section -->
+            <section class="search-hero-section" aria-label="Search and Autocomplete">
+                <div class="hero-badge">
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                    <span>O(P + K) Subtree Traversal &bull; Zero Array Filtering</span>
+                </div>
+
+                <h2 class="hero-title">Instant Prefix Search</h2>
+                <p class="hero-subtitle">Type any letters to explore instant word recommendations retrieved via Depth-First Search in the Prefix Tree.</p>
+
+                <!-- Search Container -->
+                <div class="search-wrapper" id="search-wrapper">
+                    <div class="search-input-box" id="search-input-box">
+                        <div class="search-icon-left" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.2" fill="none">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </div>
+                        
+                        <input 
+                            type="text" 
+                            id="search-input" 
+                            placeholder="Type a prefix (e.g. 'prog', 'py', 'al')..." 
+                            autocomplete="off" 
+                            spellcheck="false"
+                            aria-autocomplete="list"
+                            aria-controls="suggestions-list"
+                            aria-expanded="false"
+                        />
+
+                        <div class="search-actions-right">
+                            <button id="clear-search-btn" class="icon-action-btn hidden" title="Clear search" aria-label="Clear input">
+                                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                            <span class="keyboard-hint" title="Press forward slash to focus search">/</span>
+                        </div>
+                    </div>
+
+                    <!-- Autocomplete Dropdown List -->
+                    <div class="suggestions-dropdown hidden" id="suggestions-dropdown">
+                        <div class="suggestions-header">
+                            <span id="suggestions-meta">Suggestions (0)</span>
+                            <span class="suggestions-guide"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> Navigate <kbd>&crarr;</kbd> Select <kbd>Esc</kbd> Close</span>
+                        </div>
+                        <ul class="suggestions-list" id="suggestions-list" role="listbox">
+                            <!-- Injected dynamically via JavaScript -->
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Quick Prefix Presets -->
+                <div class="quick-tags-container">
+                    <span class="quick-tags-label">Try prefixes:</span>
+                    <div class="quick-tags" id="quick-tags">
+                        <button type="button" class="tag-btn" data-prefix="prog">prog</button>
+                        <button type="button" class="tag-btn" data-prefix="pro">pro</button>
+                        <button type="button" class="tag-btn" data-prefix="py">py</button>
+                        <button type="button" class="tag-btn" data-prefix="alg">alg</button>
+                        <button type="button" class="tag-btn" data-prefix="data">data</button>
+                        <button type="button" class="tag-btn" data-prefix="java">java</button>
+                    </div>
+                </div>
+
+                <!-- Live Trie Traversal Path Visualizer -->
+                <div class="traversal-visualizer" id="traversal-visualizer">
+                    <div class="visualizer-header">
+                        <div class="viz-title">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                            </svg>
+                            <span>Live Trie Traversal Trace:</span>
+                        </div>
+                        <span class="viz-status" id="viz-status">Awaiting query...</span>
+                    </div>
+                    <div class="node-path-track" id="node-path-track">
+                        <div class="path-node root-node active">
+                            <span class="node-badge">ROOT</span>
+                        </div>
+                        <span class="path-placeholder">Type letters above to see the Trie node traversal path</span>
+                    </div>
+                </div>
+
+                <!-- Selected Word Info Banner (Displayed upon selecting/searching) -->
+                <div class="word-selected-banner hidden" id="word-selected-banner">
+                    <div class="banner-content">
+                        <div class="banner-icon">
+                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </div>
+                        <div class="banner-text">
+                            <span class="banner-title">Word Selected: <strong id="selected-word-text"></strong></span>
+                            <span class="banner-desc" id="selected-word-details">Verified in Trie dictionary</span>
+                        </div>
+                    </div>
+                    <button class="banner-close-btn" id="banner-close-btn" aria-label="Close message">&times;</button>
+                </div>
+            </section>
+
+            <!-- Dictionary Management Section (Add / Delete / View) -->
+            <section class="dictionary-section" id="dictionary-section" aria-label="Manage Dictionary">
+                <div class="section-title-wrap">
+                    <div class="section-badge">Dictionary Manager</div>
+                    <h2 class="section-heading">Add, Delete &amp; Inspect Stored Words</h2>
+                    <p class="section-desc">Manage the persistent vocabulary of the Trie. Words are automatically preserved in your browser's <code>localStorage</code>.</p>
+                </div>
+
+                <div class="management-grid">
+                    <!-- Add Word Card -->
+                    <div class="card manage-card add-word-card">
+                        <div class="card-header">
+                            <div class="card-icon icon-add">
+                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="card-title">Add Word to Trie</h3>
+                                <p class="card-subtitle">Inserts new branch nodes in O(L) time</p>
+                            </div>
+                        </div>
+
+                        <form id="add-word-form" class="add-word-form" novalidate>
+                            <div class="form-group">
+                                <label for="new-word-input">New Word</label>
+                                <div class="input-with-button">
+                                    <input 
+                                        type="text" 
+                                        id="new-word-input" 
+                                        placeholder="Enter a new word (e.g. 'prototype')..." 
+                                        autocomplete="off"
+                                        spellcheck="false"
+                                    />
+                                    <button type="submit" class="btn btn-primary" id="add-word-btn">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none">
+                                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        </svg>
+                                        <span>Add Word</span>
+                                    </button>
+                                </div>
+                                <span class="input-feedback" id="add-feedback"></span>
+                            </div>
+                        </form>
+
+                        <div class="quick-add-section">
+                            <span class="quick-add-label">Quick add suggestions:</span>
+                            <div class="quick-add-chips">
+                                <button type="button" class="quick-add-chip" data-word="typescript">+ typescript</button>
+                                <button type="button" class="quick-add-chip" data-word="algorithm">+ algorithm</button>
+                                <button type="button" class="quick-add-chip" data-word="asynchronous">+ asynchronous</button>
+                                <button type="button" class="quick-add-chip" data-word="polyglot">+ polyglot</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dictionary Browser Card -->
+                    <div class="card manage-card browser-card">
+                        <div class="card-header space-between">
+                            <div class="header-left">
+                                <div class="card-icon icon-book">
+                                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="card-title">Stored Words</h3>
+                                    <p class="card-subtitle"><span id="dict-count-badge">0</span> words in active memory</p>
+                                </div>
+                            </div>
+                            <button id="reset-dict-btn" class="btn btn-outline-danger btn-sm" title="Reset to original default word list">
+                                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+                                    <path d="M3 2v6h6"></path>
+                                    <path d="M21 12A9 9 0 0 0 6 5.3L3 8"></path>
+                                    <path d="M21 22v-6h-6"></path>
+                                    <path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"></path>
+                                </svg>
+                                <span>Reset Defaults</span>
+                            </button>
+                        </div>
+
+                        <!-- Filter Dictionary Words -->
+                        <div class="dict-filter-box">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <input type="text" id="dict-filter-input" placeholder="Filter stored words list..." autocomplete="off" />
+                        </div>
+
+                        <!-- Words Cloud / List -->
+                        <div class="words-container" id="words-container" role="region" aria-label="Dictionary words list">
+                            <!-- Injected dynamically via JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Trie Data Structure Deep-Dive Explanation -->
+            <section class="explanation-section" id="trie-explainer" aria-label="How the Trie Works">
+                <div class="section-title-wrap">
+                    <div class="section-badge">DSA Deep-Dive</div>
+                    <h2 class="section-heading">How Does a Trie (Prefix Tree) Work?</h2>
+                    <p class="section-desc">Understand why Trie is the industry standard data structure for typeahead search engines, spell checkers, and IP routing tables.</p>
+                </div>
+
+                <div class="explainer-grid">
+                    <!-- Concept Card 1: Tree Structure -->
+                    <div class="card info-card">
+                        <div class="info-step-number">01</div>
+                        <h3 class="info-card-title">Tree of Characters</h3>
+                        <p class="info-card-text">
+                            Instead of storing words in a flat array, a Trie organizes words as a tree where each node represents a character. The root represents the empty string <code>""</code>, and paths from the root to descendant nodes represent prefixes.
+                        </p>
+                        <div class="code-pill">Node = { char, children{}, isEndOfWord }</div>
+                    </div>
+
+                    <!-- Concept Card 2: Shared Prefixes -->
+                    <div class="card info-card">
+                        <div class="info-step-number">02</div>
+                        <h3 class="info-card-title">Shared Prefix Efficiency</h3>
+                        <p class="info-card-text">
+                            Words like <code>program</code>, <code>programmer</code>, and <code>programming</code> share the exact same 7 nodes for <code>"program"</code>. This eliminates redundant character storage and enables instant grouping of related terms.
+                        </p>
+                        <div class="code-pill">Shared path: root &rarr; p &rarr; r &rarr; o &rarr; g</div>
+                    </div>
+
+                    <!-- Concept Card 3: Autocomplete via DFS -->
+                    <div class="card info-card">
+                        <div class="info-step-number">03</div>
+                        <h3 class="info-card-title">Depth-First Search (DFS)</h3>
+                        <p class="info-card-text">
+                            When the user types <code>"prog"</code>, the algorithm first traverses to the node <code>'g'</code> in $O(P)$ steps. From that subtree node, it launches a <strong>Depth-First Search</strong> to quickly discover all valid terminal leaf words.
+                        </p>
+                        <div class="code-pill">prefixNode &rarr; DFS(subtree) &rarr; suggestions</div>
+                    </div>
+                </div>
+
+                <!-- Visual Trie Architecture Diagram Card -->
+                <div class="card architecture-card">
+                    <div class="arch-header">
+                        <h3 class="arch-title">Trie Representation for Prefix "prog"</h3>
+                        <span class="arch-tag">Visual Architecture</span>
+                    </div>
+
+                    <div class="tree-ascii-wrap">
+                        <pre class="tree-ascii">
+                           [ (ROOT) ]
+                                |
+                              [ 'p' ]
+                                |
+                              [ 'r' ]
+                                |
+                              [ 'o' ]
+                                |
+                              [ 'g' ] &lt;-- End of Prefix "prog" (DFS starts here)
+                             /     \
+                       [ 'r' ]     [ 'e' ]
+                          |           |
+                       [ 'a' ]     [ 's' ]
+                          |           |
+                       [ 'm' ]*    [ 's' ]*  --&gt; "progress"
+                      /       \
+               [ 'e' ]         [ 'm' ]
+                  |               |
+               [ 'r' ]*        [ 'i' ]
+                  |               |
+              "programmer"     [ 'n' ]
+                                  |
+                               [ 'g' ]*  --&gt; "programming"
+
+   * Indicates isEndOfWord = true
+                        </pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Time & Space Complexity Section -->
+            <section class="complexity-section" id="complexity-section" aria-label="Complexity Analysis">
+                <div class="section-title-wrap">
+                    <div class="section-badge">Performance Analysis</div>
+                    <h2 class="section-heading">Time &amp; Space Complexity</h2>
+                    <p class="section-desc">Comparing Trie prefix tree operations against naive array filter methods.</p>
+                </div>
+
+                <!-- Complexity Metric Cards Grid -->
+                <div class="complexity-cards-grid">
+                    <!-- Insert Complexity -->
+                    <div class="card metric-card">
+                        <div class="metric-top">
+                            <span class="metric-name">Insertion</span>
+                            <span class="complexity-badge o-l">O(L)</span>
+                        </div>
+                        <p class="metric-desc">Traverses and creates nodes for each character of the word.</p>
+                        <div class="metric-detail">
+                            <span>$L$ = Length of inserted word</span>
+                            <strong>Independent of $N$ (dictionary size)</strong>
+                        </div>
+                    </div>
+
+                    <!-- Search Complexity -->
+                    <div class="card metric-card">
+                        <div class="metric-top">
+                            <span class="metric-name">Exact Search</span>
+                            <span class="complexity-badge o-l">O(L)</span>
+                        </div>
+                        <p class="metric-desc">Follows character edges. Fails immediately if any child is missing.</p>
+                        <div class="metric-detail">
+                            <span>$L$ = Length of search word</span>
+                            <strong>Deterministic lookup</strong>
+                        </div>
+                    </div>
+
+                    <!-- Autocomplete Complexity -->
+                    <div class="card metric-card">
+                        <div class="metric-top">
+                            <span class="metric-name">Autocomplete (DFS)</span>
+                            <span class="complexity-badge o-pk">O(P + K)</span>
+                        </div>
+                        <p class="metric-desc">Reaches prefix in $O(P)$, then visits $K$ nodes in the subtree during DFS.</p>
+                        <div class="metric-detail">
+                            <span>$P$ = Prefix length, $K$ = Subtree nodes</span>
+                            <strong>Bounded by max results count</strong>
+                        </div>
+                    </div>
+
+                    <!-- Deletion Complexity -->
+                    <div class="card metric-card">
+                        <div class="metric-top">
+                            <span class="metric-name">Deletion</span>
+                            <span class="complexity-badge o-l">O(L)</span>
+                        </div>
+                        <p class="metric-desc">Recursively unmarks <code>isEndOfWord</code> and prunes parentless nodes.</p>
+                        <div class="metric-detail">
+                            <span>$L$ = Length of deleted word</span>
+                            <strong>Automatic node pruning</strong>
+                        </div>
+                    </div>
+
+                    <!-- Space Complexity -->
+                    <div class="card metric-card">
+                        <div class="metric-top">
+                            <span class="metric-name">Space Complexity</span>
+                            <span class="complexity-badge o-space">O(N &times; L)</span>
+                        </div>
+                        <p class="metric-desc">Worst case when no words share prefixes; heavily compressed in practice.</p>
+                        <div class="metric-detail">
+                            <span>$N$ = Total words, $L$ = Average length</span>
+                            <strong>Alphabet size &Sigma; per node</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison Table -->
+                <div class="card comparison-table-card">
+                    <h3 class="comparison-title">Trie vs. Brute-Force Array Filter (<code>array.filter()</code>)</h3>
+                    <div class="table-responsive">
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>Feature / Metric</th>
+                                    <th>Trie (Prefix Tree)</th>
+                                    <th>Brute-Force Array (<code>array.filter</code>)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Autocomplete Lookup</strong></td>
+                                    <td><span class="tag-good">O(P + K)</span> &mdash; Only touches matching subtree</td>
+                                    <td><span class="tag-bad">O(N &times; P)</span> &mdash; Scans every single word in array</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Scaling to 1,000,000 Words</strong></td>
+                                    <td><span class="tag-good">&lt; 1 ms</span> &mdash; Instant response time</td>
+                                    <td><span class="tag-bad">Laggy / Stuttering</span> &mdash; Must check 1M strings on every key</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Prefix Sharing</strong></td>
+                                    <td><span class="tag-good">Yes</span> &mdash; Common roots stored only once</td>
+                                    <td><span class="tag-bad">No</span> &mdash; Duplicate prefixes stored repeatedly</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Ordered Output</strong></td>
+                                    <td><span class="tag-good">Natural</span> &mdash; DFS yields alphabetical order</td>
+                                    <td><span class="tag-neutral">Requires separate Sort</span> &mdash; O(M log M)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div class="footer-content">
+                <p>TrieSearch Engine &bull; Built with HTML5, Vanilla CSS, and JavaScript (ES6+)</p>
+                <p class="footer-subtext">Data Structure: <strong>Prefix Tree (Trie)</strong> with Depth-First Search &bull; Persistent storage via <code>localStorage</code></p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+    <!-- Scripts (Trie class loaded before app logic) -->
+    <script src="trie.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
